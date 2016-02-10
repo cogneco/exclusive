@@ -8,7 +8,6 @@ module Exclusive {
 		private response: any;
 		get Response() { return this.response; }
 		private authorisation: any;
-
 		constructor(parsedUrl: any, request: any, response: any) {
 			this.parsedUrl = parsedUrl;
 			this.requestUrl = parsedUrl.href
@@ -42,8 +41,14 @@ module Exclusive {
 		}
 		public WriteFile(file: string, log?: boolean, onCompleted?: (statusCode: number) => void) {
 			if (this.requestPath.substr(-1) == "/")
-				file = path.join(file, 'index.html');
+					file = path.join(file, 'index.html');
 			fs.stat(file, (error: any, stats: any) => {
+				if (error) {
+					this.Write("", 404, { 'Content-Type': 'text/html' });
+					if (onCompleted)
+						onCompleted(404);
+				}
+				else {
 				if (stats.isDirectory()) {
 					this.Write("Redirecting", 301, { 'Location': this.requestUrl + "/" });
 					if (onCompleted)
@@ -95,6 +100,7 @@ module Exclusive {
 							}
 						}
 					});
+				}
 				}
 			});
 		}
@@ -162,7 +168,7 @@ module Exclusive {
 		}
 		private ValidateCredential(userName: string, password: string, callback: (result: boolean) => void) {
 			var https = require('https');
-			https.get({ hostname: 'imint.highrisehq.com', path: '/me.xml', auth: userName + ':' + password }, (response: any) => {
+			https.get({ hostname: ServerConfiguration.AuthorisationServer, path: ServerConfiguration.AuthorisationPath, auth: userName + ':' + password }, (response: any) => {
 				if (response.statusCode == 200)
 					callback(true);
 				else
